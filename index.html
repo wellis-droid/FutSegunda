@@ -22,7 +22,7 @@ header p{margin:6px 0 0;opacity:.9;font-size:15px}
 main{max-width:640px;margin:0 auto;padding:16px max(4vw,12px)}
 .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
 label.t{display:block;font-weight:700;font-size:14px;margin:0 0 6px}
-input[type=text],textarea{width:100%;font:16px Barlow,sans-serif;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+input[type=text],input[type=password],textarea{width:100%;font:16px Barlow,sans-serif;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
 textarea{min-height:180px}
 .seg{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:6px}
 .seg button{min-height:44px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;font:600 14px Barlow,sans-serif;cursor:pointer;padding:0 2px}
@@ -42,7 +42,7 @@ h2{font:700 24px/1.1 "Barlow Condensed",sans-serif;margin:22px 0 4px}
 .track{height:6px;background:var(--g2);border-radius:3px;margin-top:4px;overflow:hidden}
 .track i{display:block;height:100%;background:var(--g);width:0;transition:width .2s}
 .send{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;border-radius:12px;background:#25d366;color:#08311a;font-weight:700;text-decoration:none;white-space:nowrap;border:0;font-size:16px;cursor:pointer}
-.send.off{background:var(--g2);color:var(--mut);pointer-events:none}
+.send.off{background:var(--g2);color:var(--mut);pointer-events:none}.ok{color:var(--g);font-weight:700}
 .ghost{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 15px Barlow,sans-serif;cursor:pointer}
 .msg{color:#b3261e;font-size:14px;margin:6px 0 0;min-height:1em}
 pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;font:14px/1.4 ui-monospace,monospace;margin:10px 0}
@@ -61,7 +61,7 @@ td.top{font-weight:700}
 <body>
 <header>
 <h1>Votação FutSegunda - 30/11</h1>
-<p>Marque um nível para cada jogador e envie seu voto pelo WhatsApp.</p>
+<p>Marque um nível para cada jogador e toque em Enviar voto.</p>
 </header>
 <main id="votar">
 <div class="box">
@@ -77,23 +77,23 @@ td.top{font-weight:700}
 <p style="margin-top:28px"><a class="adm" href="#apuracao-v">Apuração (organizador)</a></p>
 <section id="apuracao-v">
 <h2>Apuração</h2>
-<p class="hint">Cole aqui todas as mensagens de voto recebidas no WhatsApp (pode colar várias de uma vez). Se a mesma pessoa votar duas vezes, vale o último voto.</p>
-<textarea id="cola" placeholder="Cole as mensagens aqui"></textarea>
-<div class="row"><button class="ghost" id="apurar" type="button">Apurar</button><button class="ghost" id="copiar" type="button">Copiar resultado</button></div>
+<p class="hint">Digite a senha da planilha. Se a mesma pessoa votar duas vezes, vale o último voto.</p>
+<input type="password" id="senha" placeholder="Senha" autocomplete="current-password">
+<div class="row"><button class="ghost" id="apurar" type="button">Carregar votos</button><button class="ghost" id="copiar" type="button">Copiar resultado</button></div>
 <p class="hint" id="resumo"></p>
 <div class="scroll"><table id="res"></table></div>
 </section>
 </main>
 <div class="bar"><div class="in">
 <div class="prog"><b id="cnt">0</b> de <span id="tot">27</span> votados<div class="track"><i id="fill"></i></div><div class="msg" id="err"></div></div>
-<a class="send off" id="send" href="#" target="_blank" rel="noopener">Enviar no WhatsApp</a>
+<button class="send off" id="send" type="button">Enviar voto</button>
 </div></div>
 <script>
 {
 const PLAYERS=["Ale","Alex","Alex Sorriso","Anderson","Augustinho","Bebel","Bebel2","Bombeiro","Caio","Candia","Carlinhos","Cicinho","Edgar","Fefê","Frei Gilson","Gabigol","Hélio","Mbappé","Morelli","Piniko","Pira","Rodrigol","Thiaguinho","Tigrinho","Tiquinho","Trembolona","Viking"];
 const LV=["Craque","Bom 1","Bom 2","Bom 3","Capitão"];
 const POS=[["Ata","Atacante"],["Mei","Meio"],["Zag","Zagueiro"],["Gol","Goleiro"]];
-const HEAD="VOTO FUTSEGUNDA 30/11";
+const API="https://script.google.com/macros/s/AKfycbzWllViajOlbO3sVM9dtbWE2difL4by4fDYXjyKw6iZZyU4b3S8BvcS3SKCcPvWyurg9A/exec";
 const KEY="futseg-3011";
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let st={nome:"",pos:"",v:{}};
@@ -104,10 +104,14 @@ $("tot").textContent=PLAYERS.length;
 $("nome").value=st.nome||"";
 const drawPos=()=>{$("pos").innerHTML=POS.map(([k,t])=>`<button type="button" data-p="${k}" class="${st.pos===k?"on":""}" aria-pressed="${st.pos===k}">${t}</button>`).join("")};
 const drawList=()=>{$("lista").innerHTML=PLAYERS.map((p,i)=>`<div class="pl"><div class="n">${esc(p)}<small>${st.v[p]?esc(st.v[p]):""}</small></div><div class="seg" style="--n:5">${LV.map(l=>`<button type="button" data-i="${i}" data-l="${l}" class="${st.v[p]===l?"on":""}${l==="Capitão"?" cap":""}" aria-pressed="${st.v[p]===l}">${l}</button>`).join("")}</div></div>`).join("")};
-const buildMsg=()=>{const lines=[HEAD,`Nome: ${st.nome.trim()} (${st.pos})`];for(const l of LV){const ps=PLAYERS.filter(p=>st.v[p]===l);lines.push(`${l}: ${ps.join(", ")}`)}return lines.join("\n")};
+let sending=false;
 const upd=()=>{const n=PLAYERS.filter(p=>st.v[p]).length;$("cnt").textContent=n;$("fill").style.width=(n/PLAYERS.length*100)+"%";
  let e="";if(!st.nome.trim())e="Preencha seu nome";else if(!st.pos)e="Escolha sua posição";else if(!n)e="Vote em pelo menos um jogador";
- $("err").textContent=e;const a=$("send");if(e){a.classList.add("off");a.href="#"}else{a.classList.remove("off");a.href="https://wa.me/?text="+encodeURIComponent(buildMsg())}};
+ const er=$("err");er.className="msg";er.textContent=e;$("send").classList.toggle("off",!!e||sending)};
+$("send").addEventListener("click",async()=>{if(sending)return;sending=true;const b=$("send"),er=$("err");b.textContent="Enviando...";upd();
+ try{const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({nome:st.nome.trim(),pos:st.pos,votos:st.v})});const j=await r.json();if(!j.ok)throw 0;
+  sending=false;b.textContent="Enviar voto";upd();er.className="msg ok";er.textContent="Voto registrado! Valeu."}
+ catch(x){sending=false;b.textContent="Enviar voto";upd();er.className="msg";er.textContent="Não enviou. Confira a internet e tente de novo."}});
 $("nome").addEventListener("input",ev=>{st.nome=ev.target.value;save();upd()});
 $("pos").addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b)return;st.pos=st.pos===b.dataset.p?"":b.dataset.p;save();drawPos();upd()});
 $("lista").addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b)return;const p=PLAYERS[+b.dataset.i];if(st.v[p]===b.dataset.l)delete st.v[p];else st.v[p]=b.dataset.l;save();
@@ -119,20 +123,20 @@ drawPos();drawList();upd();
 /* Apuração */
 const norm=s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();
 const PMAP=new Map(PLAYERS.map(p=>[norm(p),p]));
-const LMAP=new Map(LV.map(l=>[norm(l).replace(/\s/g,""),l]));
 let lastTxt="";
-const apurar=()=>{const raw=$("cola").value;const parts=raw.split(/VOTO FUTSEGUNDA[^\n]*/i).slice(1);const voters=new Map();
- for(const part of parts){let name="",pos="";const v={};
-  for(let line of part.split(/\n/)){line=line.replace(/^\s*\[[^\]]*\][^:]*:\s*/,"").trim();const m=line.match(/^([^:]+):\s*(.*)$/);if(!m)continue;const key=norm(m[1]).replace(/\s/g,"");
-   if(key==="nome"){const mm=m[2].match(/^(.*?)\s*\(([^)]*)\)\s*$/);name=(mm?mm[1]:m[2]).trim();pos=mm?mm[2]:""}
-   else if(LMAP.has(key)){for(const x of m[2].split(",")){const p=PMAP.get(norm(x));if(p)v[p]=LMAP.get(key)}}}
-  if(name)voters.set(norm(name),{name,pos,v})}
+const apurar=async()=>{const k=$("senha").value.trim();if(!k){$("resumo").textContent="Digite a senha.";return}$("resumo").textContent="Carregando...";
+ let rows;try{const r=await fetch(API+"?k="+encodeURIComponent(k));rows=await r.json()}catch(x){$("resumo").textContent="Não consegui carregar. Tente de novo.";return}
+ if(!Array.isArray(rows)){$("resumo").textContent="Senha errada.";$("res").innerHTML="";lastTxt="";return}
+ const voters=new Map();
+ for(const o of rows){const name=String(o.nome||"").trim();if(!name)continue;const v={};const src=o.votos&&typeof o.votos==="object"?o.votos:{};
+  for(const [p,l] of Object.entries(src)){const pp=PMAP.get(norm(p)),ll=LV.find(x=>x===l);if(pp&&ll)v[pp]=ll}
+  voters.set(norm(name),{name,pos:String(o.pos||""),v})}
  const tab=PLAYERS.map(p=>{const c=LV.map(l=>[...voters.values()].filter(o=>o.v[p]===l).length);const tot=c.reduce((a,b)=>a+b,0);const mx=Math.max(...c);return{p,c,tot,top:tot?LV.filter((l,i)=>c[i]===mx).join(" / "):"—"}});
- $("resumo").textContent=voters.size?`${voters.size} voto(s): ${[...voters.values()].map(o=>o.name+(o.pos?" ("+o.pos+")":"")).join(", ")}`:"Nenhum voto encontrado. Confira se colou a mensagem inteira, começando por “VOTO FUTSEGUNDA”.";
+ $("resumo").textContent=voters.size?`${voters.size} voto(s): ${[...voters.values()].map(o=>o.name+(o.pos?" ("+o.pos+")":"")).join(", ")}`:"Nenhum voto ainda.";
  $("res").innerHTML=voters.size?`<thead><tr><th>Jogador</th>${LV.map(l=>`<th>${l}</th>`).join("")}<th>Mais votado</th></tr></thead><tbody>${tab.map(r=>`<tr><td>${esc(r.p)}</td>${r.c.map(n=>`<td>${n||""}</td>`).join("")}<td class="top">${esc(r.top)}</td></tr>`).join("")}</tbody>`:"";
  lastTxt=voters.size?["RESULTADO VOTAÇÃO FUTSEGUNDA 30/11",`${voters.size} votos`,...tab.map(r=>`${r.p}: ${r.top} (${LV.map((l,i)=>r.c[i]?l+" "+r.c[i]:"").filter(Boolean).join(", ")||"sem votos"})`)].join("\n"):""};
 $("apurar").addEventListener("click",apurar);
-$("copiar").addEventListener("click",async ev=>{if(!lastTxt)apurar();if(!lastTxt)return;try{await navigator.clipboard.writeText(lastTxt);ev.target.textContent="Copiado!"}catch(e){ev.target.textContent="Não deu para copiar"}setTimeout(()=>ev.target.textContent="Copiar resultado",2000)});
+$("copiar").addEventListener("click",async ev=>{if(!lastTxt)return;try{await navigator.clipboard.writeText(lastTxt);ev.target.textContent="Copiado!"}catch(e){ev.target.textContent="Não deu para copiar"}setTimeout(()=>ev.target.textContent="Copiar resultado",2000)});
 }
 </script>
 </body>
