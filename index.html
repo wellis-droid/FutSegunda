@@ -79,6 +79,7 @@ td.top{font-weight:700}
 <input type="password" id="senha" placeholder="Senha" autocomplete="current-password">
 <div class="row"><button class="ghost" id="apurar" type="button">Carregar votos</button><button class="ghost" id="copiar" type="button">Copiar resultado</button></div>
 <p class="hint" id="resumo"></p>
+<div id="alertas"></div>
 <div class="scroll"><table id="res"></table></div>
 </section>
 </main>
@@ -106,11 +107,13 @@ $("nome").value=st.nome||"";
 const drawPos=()=>{};
 const drawList=()=>{$("lista").innerHTML=PLAYERS.map((p,i)=>(i===0?`<h3 class="grp">Goleiros</h3>`:i===GK.length?`<h3 class="grp">Jogadores de linha</h3>`:"")+`<div class="pl"><div class="n">${esc(p)}<small>${st.v[p]?esc(st.v[p]):""}</small></div><div class="seg" style="--n:5">${LV.map(l=>`<button type="button" data-i="${i}" data-l="${l}" class="${st.v[p]===l?"on":""}${l==="Capitão"?" cap":""}" aria-pressed="${st.v[p]===l}">${l}</button>`).join("")}</div></div>`).join("")};
 let sending=false;
+let DEV="";try{DEV=localStorage.getItem("futseg-dev")||""}catch(e){}
+if(!DEV){const a=new Uint8Array(6);crypto.getRandomValues(a);DEV=[...a].map(x=>x.toString(16).padStart(2,"0")).join("");try{localStorage.setItem("futseg-dev",DEV)}catch(e){}}
 const upd=()=>{const n=PLAYERS.filter(p=>st.v[p]).length;$("cnt").textContent=n;$("fill").style.width=(n/PLAYERS.length*100)+"%";
  let e="";if(!st.nome.trim())e="Preencha seu nome";else if(!n)e="Vote em pelo menos um jogador";
  const er=$("err");er.className="msg";er.textContent=e;$("send").classList.toggle("off",!!e||sending)};
 $("send").addEventListener("click",async()=>{if(sending)return;sending=true;const b=$("send"),er=$("err");b.textContent="Enviando...";upd();
- try{const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({nome:st.nome.trim(),pos:"",votos:st.v})});const j=await r.json();if(!j.ok)throw 0;
+ try{const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({nome:st.nome.trim(),pos:"D:"+DEV,votos:st.v})});const j=await r.json();if(!j.ok)throw 0;
   sending=false;b.textContent="Enviar voto";upd();er.className="msg ok";er.textContent="Voto registrado! Valeu."}
  catch(x){sending=false;b.textContent="Enviar voto";upd();er.className="msg";er.textContent="Não enviou. Confira a internet e tente de novo."}});
 $("nome").addEventListener("input",ev=>{st.nome=ev.target.value;save();upd()});
@@ -127,7 +130,11 @@ let lastTxt="";
 const apurar=async()=>{const k=$("senha").value.trim();if(!k){$("resumo").textContent="Digite a senha.";return}$("resumo").textContent="Carregando...";
  let rows;try{const r=await fetch(API+"?k="+encodeURIComponent(k));rows=await r.json()}catch(x){$("resumo").textContent="Não consegui carregar. Tente de novo.";return}
  if(!Array.isArray(rows)){$("resumo").textContent="Senha errada.";$("res").innerHTML="";lastTxt="";return}
- const voters=new Map();
+ const voters=new Map();const devs=new Map();const reps=new Map();
+ for(const o of rows){const dt=new Date(o.data);if(!(dt>=CUT))continue;const nm0=String(o.nome||"").trim();if(nm0){const kk=norm(nm0);reps.set(kk,{n:nm0,c:(reps.get(kk)?.c||0)+1});const ps=String(o.pos||"");if(ps.startsWith("D:")){const d=ps.slice(2);if(!devs.has(d))devs.set(d,new Map());devs.get(d).set(kk,nm0)}}}
+ const al=[];for(const m of devs.values())if(m.size>1)al.push("Mesmo aparelho: "+[...m.values()].join(", "));
+ for(const x of reps.values())if(x.c>1)al.push(x.n+" votou "+x.c+" vezes com o mesmo nome (vale o último)");
+ $("alertas").innerHTML=al.length?`<div class="box" style="border-color:#b3261e;margin:8px 0"><b style="color:#b3261e">Atenção</b>${al.map(t=>`<div>${esc(t)}</div>`).join("")}</div>`:"";
  for(const o of rows){const dt=new Date(o.data);if(!(dt>=CUT))continue;const name=String(o.nome||"").trim();if(!name)continue;const v={};const src=o.votos&&typeof o.votos==="object"?o.votos:{};
   for(const [p,l] of Object.entries(src)){const pp=PMAP.get(norm(p)),ll=LV.find(x=>x===l);if(pp&&ll)v[pp]=ll}
   voters.set(norm(name),{name,pos:String(o.pos||""),v})}
