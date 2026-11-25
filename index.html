@@ -32,7 +32,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 h2{font:700 24px/1.1 "Barlow Condensed",sans-serif;margin:22px 0 4px}
 .hint{color:var(--mut);font-size:14px;margin:0 0 10px}
 .pl{padding:12px 0;border-top:1px solid var(--line)}
-.pl:first-child{border-top:0}
+.pl:first-child,.grp+.pl{border-top:0}.grp{font:700 18px/1.2 "Barlow Condensed",sans-serif;color:var(--g);margin:14px 0 4px}.grp:first-child{margin-top:0}
 .pl .n{font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;gap:8px}
 .pl .n small{color:var(--mut);font-weight:600}
 .bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:10px max(4vw,12px) calc(10px + env(safe-area-inset-bottom))}
@@ -42,7 +42,7 @@ h2{font:700 24px/1.1 "Barlow Condensed",sans-serif;margin:22px 0 4px}
 .track{height:6px;background:var(--g2);border-radius:3px;margin-top:4px;overflow:hidden}
 .track i{display:block;height:100%;background:var(--g);width:0;transition:width .2s}
 .send{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;border-radius:12px;background:#25d366;color:#08311a;font-weight:700;text-decoration:none;white-space:nowrap;border:0;font-size:16px;cursor:pointer}
-.send.off{background:var(--g2);color:var(--mut);pointer-events:none}.ok{color:var(--g);font-weight:700}
+.send.off{background:var(--g2);color:var(--mut);pointer-events:none}.msg.ok{color:var(--g);font-weight:700}
 .ghost{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 15px Barlow,sans-serif;cursor:pointer}
 .msg{color:#b3261e;font-size:14px;margin:6px 0 0;min-height:1em}
 pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;font:14px/1.4 ui-monospace,monospace;margin:10px 0}
@@ -61,16 +61,14 @@ td.top{font-weight:700}
 <body>
 <header>
 <h1>Votação FutSegunda - 30/11</h1>
-<p>Marque um nível para cada jogador e toque em Enviar voto.</p>
+<p>Goleiros e novos jogadores: marque um nível para cada um e toque em Enviar voto.</p>
 </header>
 <main id="votar">
 <div class="box">
 <label class="t" for="nome">Nome</label>
 <input type="text" id="nome" autocomplete="name" placeholder="Seu nome ou apelido">
-<label class="t" style="margin-top:14px">Posição</label>
-<div class="seg" id="pos" style="--n:4"></div>
 </div>
-<h2>Jogadores</h2>
+<h2>Votação</h2>
 <p class="hint">Toque de novo no nível para desmarcar. Não vote em você mesmo.</p>
 <div class="box" id="lista"></div>
 <div class="row"><button class="ghost" id="limpar" type="button">Limpar votos</button></div>
@@ -90,11 +88,14 @@ td.top{font-weight:700}
 </div></div>
 <script>
 {
-const PLAYERS=["Ale","Alex","Alex Sorriso","Anderson","Augustinho","Bebel","Bebel2","Bombeiro","Caio","Candia","Carlinhos","Cicinho","Edgar","Fefê","Frei Gilson","Gabigol","Hélio","Mbappé","Morelli","Piniko","Pira","Rodrigol","Thiaguinho","Tigrinho","Tiquinho","Trembolona","Viking"];
+const GK=["Eltinho","Digae","Teló","Calcinha","Wellingthon","Pedro Mediciners"];
+const LINE=["Japa","Gui Boi","Renan","Daniel","Lozze","Moises","Cadu"];
+const PLAYERS=[...GK,...LINE];
+const CUT=new Date("2026-11-25T17:45:00Z");
 const LV=["Craque","Bom 1","Bom 2","Bom 3","Capitão"];
 const POS=[["Ata","Atacante"],["Mei","Meio"],["Zag","Zagueiro"],["Gol","Goleiro"]];
 const API="https://script.google.com/macros/s/AKfycbzWllViajOlbO3sVM9dtbWE2difL4by4fDYXjyKw6iZZyU4b3S8BvcS3SKCcPvWyurg9A/exec";
-const KEY="futseg-3011";
+const KEY="futseg-3011-gk";
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let st={nome:"",pos:"",v:{}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&s.v)st=s}catch(e){}
@@ -102,18 +103,17 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
 const $=id=>document.getElementById(id);
 $("tot").textContent=PLAYERS.length;
 $("nome").value=st.nome||"";
-const drawPos=()=>{$("pos").innerHTML=POS.map(([k,t])=>`<button type="button" data-p="${k}" class="${st.pos===k?"on":""}" aria-pressed="${st.pos===k}">${t}</button>`).join("")};
-const drawList=()=>{$("lista").innerHTML=PLAYERS.map((p,i)=>`<div class="pl"><div class="n">${esc(p)}<small>${st.v[p]?esc(st.v[p]):""}</small></div><div class="seg" style="--n:5">${LV.map(l=>`<button type="button" data-i="${i}" data-l="${l}" class="${st.v[p]===l?"on":""}${l==="Capitão"?" cap":""}" aria-pressed="${st.v[p]===l}">${l}</button>`).join("")}</div></div>`).join("")};
+const drawPos=()=>{};
+const drawList=()=>{$("lista").innerHTML=PLAYERS.map((p,i)=>(i===0?`<h3 class="grp">Goleiros</h3>`:i===GK.length?`<h3 class="grp">Jogadores de linha</h3>`:"")+`<div class="pl"><div class="n">${esc(p)}<small>${st.v[p]?esc(st.v[p]):""}</small></div><div class="seg" style="--n:5">${LV.map(l=>`<button type="button" data-i="${i}" data-l="${l}" class="${st.v[p]===l?"on":""}${l==="Capitão"?" cap":""}" aria-pressed="${st.v[p]===l}">${l}</button>`).join("")}</div></div>`).join("")};
 let sending=false;
 const upd=()=>{const n=PLAYERS.filter(p=>st.v[p]).length;$("cnt").textContent=n;$("fill").style.width=(n/PLAYERS.length*100)+"%";
- let e="";if(!st.nome.trim())e="Preencha seu nome";else if(!st.pos)e="Escolha sua posição";else if(!n)e="Vote em pelo menos um jogador";
+ let e="";if(!st.nome.trim())e="Preencha seu nome";else if(!n)e="Vote em pelo menos um jogador";
  const er=$("err");er.className="msg";er.textContent=e;$("send").classList.toggle("off",!!e||sending)};
 $("send").addEventListener("click",async()=>{if(sending)return;sending=true;const b=$("send"),er=$("err");b.textContent="Enviando...";upd();
- try{const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({nome:st.nome.trim(),pos:st.pos,votos:st.v})});const j=await r.json();if(!j.ok)throw 0;
+ try{const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({nome:st.nome.trim(),pos:"",votos:st.v})});const j=await r.json();if(!j.ok)throw 0;
   sending=false;b.textContent="Enviar voto";upd();er.className="msg ok";er.textContent="Voto registrado! Valeu."}
  catch(x){sending=false;b.textContent="Enviar voto";upd();er.className="msg";er.textContent="Não enviou. Confira a internet e tente de novo."}});
 $("nome").addEventListener("input",ev=>{st.nome=ev.target.value;save();upd()});
-$("pos").addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b)return;st.pos=st.pos===b.dataset.p?"":b.dataset.p;save();drawPos();upd()});
 $("lista").addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b)return;const p=PLAYERS[+b.dataset.i];if(st.v[p]===b.dataset.l)delete st.v[p];else st.v[p]=b.dataset.l;save();
  const row=b.closest(".pl");row.querySelector("small").textContent=st.v[p]||"";row.querySelectorAll("button").forEach(x=>{const on=st.v[p]===x.dataset.l;x.classList.toggle("on",on);x.setAttribute("aria-pressed",on)});upd()});
 let armed=false;
@@ -128,11 +128,11 @@ const apurar=async()=>{const k=$("senha").value.trim();if(!k){$("resumo").textCo
  let rows;try{const r=await fetch(API+"?k="+encodeURIComponent(k));rows=await r.json()}catch(x){$("resumo").textContent="Não consegui carregar. Tente de novo.";return}
  if(!Array.isArray(rows)){$("resumo").textContent="Senha errada.";$("res").innerHTML="";lastTxt="";return}
  const voters=new Map();
- for(const o of rows){const name=String(o.nome||"").trim();if(!name)continue;const v={};const src=o.votos&&typeof o.votos==="object"?o.votos:{};
+ for(const o of rows){const dt=new Date(o.data);if(!(dt>=CUT))continue;const name=String(o.nome||"").trim();if(!name)continue;const v={};const src=o.votos&&typeof o.votos==="object"?o.votos:{};
   for(const [p,l] of Object.entries(src)){const pp=PMAP.get(norm(p)),ll=LV.find(x=>x===l);if(pp&&ll)v[pp]=ll}
   voters.set(norm(name),{name,pos:String(o.pos||""),v})}
  const tab=PLAYERS.map(p=>{const c=LV.map(l=>[...voters.values()].filter(o=>o.v[p]===l).length);const tot=c.reduce((a,b)=>a+b,0);const mx=Math.max(...c);return{p,c,tot,top:tot?LV.filter((l,i)=>c[i]===mx).join(" / "):"—"}});
- $("resumo").textContent=voters.size?`${voters.size} voto(s): ${[...voters.values()].map(o=>o.name+(o.pos?" ("+o.pos+")":"")).join(", ")}`:"Nenhum voto ainda.";
+ $("resumo").textContent=voters.size?`${voters.size} voto(s): ${[...voters.values()].map(o=>o.name).join(", ")}`:"Nenhum voto ainda.";
  $("res").innerHTML=voters.size?`<thead><tr><th>Jogador</th>${LV.map(l=>`<th>${l}</th>`).join("")}<th>Mais votado</th></tr></thead><tbody>${tab.map(r=>`<tr><td>${esc(r.p)}</td>${r.c.map(n=>`<td>${n||""}</td>`).join("")}<td class="top">${esc(r.top)}</td></tr>`).join("")}</tbody>`:"";
  lastTxt=voters.size?["RESULTADO VOTAÇÃO FUTSEGUNDA 30/11",`${voters.size} votos`,...tab.map(r=>`${r.p}: ${r.top} (${LV.map((l,i)=>r.c[i]?l+" "+r.c[i]:"").filter(Boolean).join(", ")||"sem votos"})`)].join("\n"):""};
 $("apurar").addEventListener("click",apurar);
